@@ -25,11 +25,16 @@ const Store = {
 
   // User profile
   getProfile() {
-    return this.get('profile') || { name: '', warnings: [] };
+    return this.get('profile') || { name: '', email: '', warnings: [] };
   },
 
   setProfile(profile) {
     this.set('profile', profile);
+  },
+
+  isLoggedIn() {
+    const p = this.getProfile();
+    return !!(p.name && p.email);
   },
 
   // Favorites
@@ -53,6 +58,82 @@ const Store = {
 
   setReminder(config) {
     this.set('waterReminder', config);
+  },
+
+  // Visited recipes (tracks which categories user has explored)
+  getVisited() {
+    return this.get('visitedRecipes') || [];
+  },
+
+  markVisited(recipeId) {
+    const visited = this.getVisited();
+    if (!visited.includes(recipeId)) {
+      visited.push(recipeId);
+      this.set('visitedRecipes', visited);
+    }
+  },
+
+  // Weekly check-ins
+  getCheckins() {
+    return this.get('checkins') || [];
+  },
+
+  addCheckin(score) {
+    const checkins = this.getCheckins();
+    const today = new Date().toISOString().slice(0, 10);
+    // Replace if already checked in today
+    const idx = checkins.findIndex(c => c.date === today);
+    if (idx > -1) checkins[idx].score = score;
+    else checkins.push({ date: today, score });
+    this.set('checkins', checkins);
+  },
+
+  // Streak tracking
+  getStreak() {
+    const data = this.get('streak') || { count: 0, lastDate: null };
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (data.lastDate === today) return data;
+    if (data.lastDate === yesterday) return { count: data.count, lastDate: data.lastDate };
+    // Streak broken
+    return { count: 0, lastDate: null };
+  },
+
+  bumpStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const current = this.getStreak();
+    if (current.lastDate === today) return current; // already bumped today
+    const newCount = current.count + 1;
+    const streak = { count: newCount, lastDate: today };
+    this.set('streak', streak);
+    return streak;
+  },
+
+  // 30-day program
+  getProgram() {
+    return this.get('program') || { startDate: null, completedDays: [] };
+  },
+
+  startProgram() {
+    const today = new Date().toISOString().slice(0, 10);
+    this.set('program', { startDate: today, completedDays: [] });
+  },
+
+  completeProgramDay(dayNum) {
+    const prog = this.getProgram();
+    if (!prog.completedDays.includes(dayNum)) {
+      prog.completedDays.push(dayNum);
+      this.set('program', prog);
+    }
+  },
+
+  getProgramDay() {
+    const prog = this.getProgram();
+    if (!prog.startDate) return 0;
+    const start = new Date(prog.startDate);
+    const now = new Date();
+    const diff = Math.floor((now - start) / 86400000);
+    return Math.min(diff + 1, 30); // day 1 to 30
   },
 
   // Community messages

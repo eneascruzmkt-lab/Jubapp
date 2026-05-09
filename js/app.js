@@ -1,5 +1,6 @@
 /**
- * Jubapp — Main application logic
+ * Jubapp,Main application logic
+ * Calm/Headspace-inspired UI patterns
  */
 (function () {
   'use strict';
@@ -8,13 +9,9 @@
   const $$ = s => document.querySelectorAll(s);
   const app = $('#app');
 
-  // ─── Tab navigation ───
   function initTabs() {
     $$('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.tab;
-        Router.navigate('/' + target);
-      });
+      btn.addEventListener('click', () => { haptic(); Router.navigate('/' + btn.dataset.tab); });
     });
   }
 
@@ -30,184 +27,295 @@
       .filter(f => userWarnings.includes(f))
       .map(f => {
         const flag = SAFETY_FLAGS[f];
-        return `<div class="safety-badge">${icon('warning', 16)} <span>${flag.label}: ${flag.warning}</span></div>`;
+        return `<div class="safety-badge">${icon('warning', 18)} <span>${flag.label}: ${flag.warning}</span></div>`;
       }).join('');
   }
 
   function starBtn(recipeId) {
     const isFav = Store.getFavorites().includes(recipeId);
     return `<button class="fav-btn ${isFav ? 'is-fav' : ''}" data-recipe="${recipeId}" aria-label="Favorite">
-      ${isFav ? icon('starFilled', 20) : icon('star', 20)}
+      ${isFav ? icon('starFilled', 22) : icon('star', 22)}
     </button>`;
   }
 
-  // ─── Pages ───
+  const DAILY_TIPS = [
+    'A pinch of black pepper makes turmeric 2,000% more absorbable. Never take one without the other.',
+    'Ginger tea before bed relaxes your intestinal muscles,less gas, less bloating by morning.',
+    'Honey loses its healing enzymes above 140°F. Always add it after the water cools a little.',
+    'Cinnamon in your morning coffee stabilizes blood sugar for up to 4 hours.',
+    'Garlic is most powerful when crushed and left to sit for 10 minutes before cooking.',
+    'Rosemary isn\'t just for cooking,smelling it improves memory by up to 75%.',
+    'Chamomile tea works better if you steep it for 5 full minutes, not 2.',
+    'Your body absorbs nutrients better in the morning. Take your tonics before 10am.',
+    'Apple cider vinegar before meals increases stomach acid,which actually reduces bloating.',
+    'Lemon water first thing in the morning helps your kidneys flush sodium while you slept.',
+    'Walnuts are shaped like a brain for a reason,they\'re the richest nut in omega-3s.',
+    'Fennel seeds after a heavy meal can calm bloating in under 20 minutes.',
+    'Warm water absorbs faster than cold water. Always use warm for your tonics.',
+    'Coconut oil in your morning drink gives your brain fuel that lasts 4-5 hours.',
+    'Celery contains phthalides,compounds that relax artery walls and lower blood pressure naturally.',
+    'Tart cherry juice before bed increases melatonin production. Nature\'s sleeping pill.',
+    'Flaxseed must be ground to be absorbed. Whole seeds pass straight through.',
+    'Hibiscus tea acts like a gentle ACE inhibitor,the same mechanism as BP medication.',
+    'Sage tea improves word recall within hours. Shakespeare knew,he called it the herb of remembrance.',
+    'Your grandmother was right: chicken broth heals. The gelatin repairs your gut lining.',
+    'Lavender under your pillow isn\'t folklore,linalool measurably lowers cortisol.',
+    'Cayenne pepper applied to skin tricks pain receptors into calming down. Ancient knowledge.',
+    'Bananas before bed deliver tryptophan and magnesium,both precursors to melatonin.',
+    'A tablespoon of olive oil in the morning coats your stomach and improves nutrient absorption.',
+    'Cumin stimulates your pancreas to release digestive enzymes. Add it to heavy meals.',
+    'Peppermint is a natural antispasmodic,it calms the muscles in your gut lining.',
+    'Raw honey has over 200 active compounds. Processed honey has almost none.',
+    'Ginger increases blood flow to the brain. That\'s why it clears fog so fast.',
+    'Cloves contain eugenol,one of the strongest natural painkillers known.',
+    'Your body heals fastest between 10pm and 2am. What you eat before bed matters.'
+  ];
 
-  // HOME
+  function getDailyTip() {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
+  }
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  // ─── HOME ───
   function renderHome() {
     setActiveTab('home');
     const profile = Store.getProfile();
     const name = profile.name || 'Friend';
-    const favs = Store.getFavorites();
 
-    let favSection = '';
-    if (favs.length) {
-      const favRecipes = RECIPES.filter(r => favs.includes(r.id));
-      favSection = `
-        <section class="section">
-          <h2 class="section-label">Your Favorites</h2>
-          <div class="recipe-scroll">
-            ${favRecipes.map(r => recipeCard(r)).join('')}
-          </div>
-        </section>`;
-    }
+    // Streak
+    const streak = Store.getStreak();
+
+    // Weekly check-in
+    const checkins = Store.getCheckins();
+    const today = new Date().toISOString().slice(0, 10);
+    const checkedToday = checkins.find(c => c.date === today);
+
+    // Program
+    const prog = Store.getProgram();
+    const hasProgram = !!prog.startDate;
+    const programDay = hasProgram ? Store.getProgramDay() : 0;
+    const todayProg = hasProgram ? PROGRAM_30.find(p => p.day === programDay) : null;
+    const todayDone = hasProgram && prog.completedDays.includes(programDay);
 
     app.innerHTML = `
       <div class="page page-home">
-        <header class="page-header">
-          <div>
-            <p class="greeting">Good ${getGreeting()}, ${name}.</p>
-            <h1 class="page-title">Your Healing Protocol</h1>
+        <div class="home-hero home-hero-compact">
+          <img class="home-hero-bg" src="img/hero-banner.webp" alt="">
+          <div class="home-hero-overlay"></div>
+          <div class="home-hero-content">
+            <p class="home-hero-greeting">${getGreeting()}, ${name}.</p>
+            <h1 class="home-hero-title">Your Healing Protocol</h1>
           </div>
-          <button class="icon-btn" onclick="Router.navigate('/settings')">${icon('settings', 22)}</button>
-        </header>
+          <button class="home-hero-settings" onclick="Router.navigate('/settings')">${icon('settings', 18)}</button>
+          ${streak.count > 0 ? `<div class="home-hero-streak">${icon('flame', 14)} <strong>${streak.count}</strong></div>` : ''}
+        </div>
 
-        <section class="section">
-          <h2 class="section-label">By Symptom</h2>
+        <div class="page-body page-body-compact">
+
+          <!-- 1 central card: program or start -->
+          ${!hasProgram ? `
+            <div class="program-start-card" onclick="startProgram()">
+              <div class="program-start-left">
+                <span class="program-start-badge">30-DAY PROTOCOL</span>
+                <h3 class="program-start-title">Start your healing journey</h3>
+                <p class="program-start-sub">One recipe a day. Mama Juba walks with you.</p>
+              </div>
+              <span class="program-start-arrow">${icon('arrowRight', 20)}</span>
+            </div>
+          ` : todayProg ? `
+            <div class="program-today-card ${todayDone ? 'done' : ''}">
+              <div class="program-today-header">
+                <span class="program-today-day">Day ${programDay} of 30</span>
+                <span class="program-today-dots-wrap">
+                  ${PROGRAM_30.slice(0, 30).map((_, i) => `<span class="pdot ${prog.completedDays.includes(i+1) ? 'filled' : ''} ${i+1 === programDay ? 'current' : ''}"></span>`).join('')}
+                </span>
+              </div>
+              <p class="program-today-msg">"${todayProg.message}"</p>
+              ${todayProg.recipeId && !todayDone ? `
+                <button class="program-today-btn" onclick="Router.navigate('/recipe/${todayProg.recipeId}')">
+                  Open today's recipe ${icon('arrowRight', 16)}
+                </button>
+              ` : todayDone ? `
+                <div class="program-today-done">${icon('check', 16)} Completed,see you tomorrow</div>
+              ` : `
+                <div class="program-today-rest">${icon('leaf', 16)} Rest day,let your body absorb</div>
+              `}
+            </div>
+          ` : `
+            <div class="program-today-card done">
+              <p class="program-today-msg">"You did it. 30 days. Your body is not the same."</p>
+              <div class="program-today-done">${icon('check', 16)} Protocol Complete</div>
+            </div>
+          `}
+
+          <!-- Categories -->
+          <div class="section-label">By symptom</div>
           <div class="cat-grid">
             ${CATEGORIES.map(c => `
               <button class="cat-card" onclick="Router.navigate('/recipes/${c.id}')" style="--cat-color:${c.color}">
-                <span class="cat-icon">${icon(c.svgIcon, 26)}</span>
+                <span class="cat-icon">${icon(c.svgIcon, 22)}</span>
                 <span class="cat-name">${c.label}</span>
               </button>
             `).join('')}
           </div>
-        </section>
 
-        ${favSection}
-
-        <section class="section">
-          <h2 class="section-label">All Recipes</h2>
-          <div class="recipe-list">
-            ${RECIPES.map(r => recipeCard(r)).join('')}
-          </div>
-        </section>
+        </div>
       </div>`;
   }
 
   function recipeCard(r) {
     const cat = CATEGORIES.find(c => c.id === r.category);
+    const hasImg = r.image;
     return `
-      <article class="recipe-card" onclick="Router.navigate('/recipe/${r.id}')">
-        <div class="recipe-card-icon" style="--cat-color:${cat?.color || '#888'}">${icon(cat?.svgIcon || 'leaf', 22)}</div>
+      <article class="recipe-card ${hasImg ? 'has-image' : ''}" onclick="Router.navigate('/recipe/${r.id}')" style="--cat-color:${cat?.color || '#888'}">
+        ${hasImg
+          ? `<div class="recipe-card-thumb"><img src="${r.image}" alt="" loading="lazy"></div>`
+          : `<div class="recipe-card-icon">${icon(cat?.svgIcon || 'leaf', 22)}</div>`}
         <div class="recipe-card-body">
           <h3 class="recipe-card-title">${r.title}</h3>
           <p class="recipe-card-sub">${r.subtitle}</p>
-          <span class="recipe-card-meta">${icon('clock', 13)} ${r.prepTime}</span>
+          <span class="recipe-card-meta">${icon('clock', 12)} ${r.prepTime}</span>
         </div>
         ${starBtn(r.id)}
       </article>`;
   }
 
-  // RECIPES BY CATEGORY
+  // ─── RECIPES BY CATEGORY ───
   function renderRecipes(catId) {
     setActiveTab('home');
     const cat = CATEGORIES.find(c => c.id === catId);
     if (!cat) return renderHome();
-
     const filtered = RECIPES.filter(r => r.category === catId);
+
     app.innerHTML = `
       <div class="page">
-        <header class="page-header">
-          <button class="icon-btn" onclick="Router.navigate('/')">${icon('arrowLeft', 20)}</button>
-          <h1 class="page-title">${icon(cat.svgIcon, 22)} ${cat.label}</h1>
-          <div></div>
-        </header>
-        <div class="recipe-list">
-          ${filtered.length
-            ? filtered.map(r => recipeCard(r)).join('')
-            : '<p class="empty-msg">Recipes coming soon for this category.</p>'}
+        <div class="inner-header">
+          <button class="back-btn-big" onclick="Router.navigate('/')">${icon('arrowLeft', 18)} <span>Back</span></button>
+          <h1 class="inner-header-title">${icon(cat.svgIcon, 20)} ${cat.label}</h1>
+        </div>
+        <div class="page-body">
+          <div class="recipe-list">
+            ${filtered.length
+              ? filtered.map(r => recipeCard(r)).join('')
+              : '<p class="empty-msg">Recipes coming soon for this category.</p>'}
+          </div>
         </div>
       </div>`;
   }
 
-  // SINGLE RECIPE
+  // ─── SINGLE RECIPE ───
   function renderRecipe(recipeId) {
     setActiveTab('home');
     const r = RECIPES.find(x => x.id === recipeId);
     if (!r) return renderHome();
     const cat = CATEGORIES.find(c => c.id === r.category);
+    const alreadyMade = Store.getVisited().includes(recipeId);
 
     app.innerHTML = `
       <div class="page page-recipe">
-        <header class="page-header">
-          <button class="icon-btn" onclick="history.back()">${icon('arrowLeft', 20)}</button>
-          <h1 class="page-title">${r.title}</h1>
-          ${starBtn(r.id)}
-        </header>
-
-        <div class="recipe-hero" style="--cat-color:${cat?.color || '#888'}">
-          <span class="recipe-hero-icon">${icon(cat?.svgIcon || 'leaf', 40)}</span>
-          <p class="recipe-hero-sub">${r.subtitle}</p>
-          <span class="recipe-hero-time">${icon('clock', 14)} ${r.prepTime}</span>
+        <div class="recipe-detail-hero ${r.image ? 'has-bg' : ''}" style="--cat-color:${cat?.color || '#2D5A30'}">
+          ${r.image ? `<img class="recipe-detail-bg" src="${r.image}" alt="">` : ''}
+          <div class="recipe-detail-hero-overlay"></div>
+          <button class="back-btn-hero" onclick="history.back()">${icon('arrowLeft', 18)} <span>Back</span></button>
+          <div style="position:absolute;top:16px;right:16px;z-index:2">${starBtn(r.id)}</div>
+          <div class="recipe-detail-hero-content">
+            <div class="recipe-detail-icon">${icon(cat?.svgIcon || 'leaf', 32)}</div>
+            <h1 class="recipe-detail-title">${r.title}</h1>
+            <p class="recipe-detail-sub">${r.subtitle}</p>
+            <span class="recipe-detail-time">${icon('clock', 14)} ${r.prepTime}</span>
+          </div>
         </div>
 
-        ${safetyBadges(r)}
+        <div class="recipe-detail-body">
+          ${safetyBadges(r)}
 
-        <section class="recipe-section">
-          <h2>Ingredients</h2>
-          <ul class="ingredient-list">
-            ${r.ingredients.map(i => `<li><span class="ing-amount">${i.amount}</span> ${i.name}</li>`).join('')}
-          </ul>
-        </section>
+          <div class="detail-section">
+            <h2 class="detail-section-header">Ingredients</h2>
+            <ul class="ingredient-list">
+              ${r.ingredients.map(i => `<li><span class="ing-amount">${i.amount}</span> ${i.name}</li>`).join('')}
+            </ul>
+          </div>
 
-        <section class="recipe-section">
-          <h2>How to Prepare</h2>
-          <ol class="steps-list">
-            ${r.steps.map(s => `<li>${s}</li>`).join('')}
-          </ol>
-        </section>
+          <div class="detail-section">
+            <h2 class="detail-section-header">How to Prepare</h2>
+            <ol class="steps-list">
+              ${r.steps.map(s => `<li>${s}</li>`).join('')}
+            </ol>
+          </div>
 
-        <section class="recipe-section why-section">
-          <h2>Why It Works</h2>
-          <p>${r.why}</p>
-        </section>
-
-        ${r.videoId ? `
-          <section class="recipe-section">
-            <h2>Watch Mama Juba Make This</h2>
-            <div class="video-embed">
-              <iframe src="https://www.youtube.com/embed/${r.videoId}" frameborder="0" allowfullscreen loading="lazy"></iframe>
+          <div class="detail-section">
+            <h2 class="detail-section-header">Why It Works</h2>
+            <div class="why-card">
+              <p>${r.why}</p>
             </div>
-          </section>` : ''}
-      </div>`;
+          </div>
 
-    // Fav button handler
-    // fav handled by global delegate
+          ${r.videoId ? `
+            <div class="detail-section">
+              <h2 class="detail-section-header">Watch Mama Juba</h2>
+              <div class="video-embed">
+                <iframe src="https://www.youtube.com/embed/${r.videoId}" frameborder="0" allowfullscreen loading="lazy"></iframe>
+              </div>
+            </div>` : ''}
+
+          <div class="made-it-wrap">
+            ${alreadyMade
+              ? `<div class="made-it-done">${icon('check', 18)} You've made this recipe</div>`
+              : `<button class="made-it-btn" onclick="markMade('${r.id}')">${icon('check', 18)} I made this recipe</button>`}
+          </div>
+        </div>
+      </div>`;
   }
 
-  // VIDEOS
+  window.markMade = function(recipeId) {
+    haptic();
+    Store.markVisited(recipeId);
+    Store.bumpStreak();
+    // Check if this is today's program recipe
+    const prog = Store.getProgram();
+    if (prog.startDate) {
+      const day = Store.getProgramDay();
+      const todayProg = PROGRAM_30.find(p => p.day === day);
+      if (todayProg && todayProg.recipeId === recipeId) {
+        Store.completeProgramDay(day);
+        showToast('Day ' + day + ' complete! Keep going!');
+      } else {
+        showToast('Recipe done!');
+      }
+    } else {
+      showToast('Recipe done!');
+    }
+    renderRecipe(recipeId);
+  };
+
+  // ─── VIDEOS ───
   function renderVideos() {
     setActiveTab('videos');
     app.innerHTML = `
       <div class="page">
-        <header class="page-header">
-          <h1 class="page-title">${icon('play', 22)} Video Library</h1>
-        </header>
+        <div class="inner-header">
+          <h1 class="inner-header-title">${icon('play', 20)} Video Library</h1>
+        </div>
         <div class="video-list">
           ${VIDEOS.map(v => {
-            const vcat = CATEGORIES.find(c => c.id === v.category);
             return `
               <article class="video-card" ${v.youtubeId ? `onclick="Router.navigate('/video/${v.id}')"` : ''}>
                 <div class="video-thumb ${!v.youtubeId ? 'coming-soon' : ''}">
                   ${v.youtubeId
                     ? `<img src="https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg" alt="" loading="lazy">`
-                    : `<span class="coming-label">${icon('play', 24)}<br>Coming Soon</span>`}
+                    : `<span class="coming-label">${icon('play', 20)}<br>Soon</span>`}
                 </div>
                 <div class="video-info">
                   <h3>${v.title}</h3>
                   <p>${v.description}</p>
-                  <span class="video-meta">${v.duration}${vcat ? ' · ' + vcat.label : ''}</span>
+                  <span class="video-meta">${v.duration}</span>
                 </div>
               </article>`;
           }).join('')}
@@ -215,19 +323,16 @@
       </div>`;
   }
 
-  // SINGLE VIDEO
   function renderVideo(videoId) {
     setActiveTab('videos');
     const v = VIDEOS.find(x => x.id === videoId);
     if (!v || !v.youtubeId) return renderVideos();
-
     app.innerHTML = `
       <div class="page">
-        <header class="page-header">
-          <button class="icon-btn" onclick="Router.navigate('/videos')">${icon('arrowLeft', 20)}</button>
-          <h1 class="page-title">${v.title}</h1>
-          <div></div>
-        </header>
+        <div class="inner-header">
+          <button class="back-btn" onclick="Router.navigate('/videos')">${icon('arrowLeft', 18)}</button>
+          <h1 class="inner-header-title">${v.title}</h1>
+        </div>
         <div class="video-embed">
           <iframe src="https://www.youtube.com/embed/${v.youtubeId}" frameborder="0" allowfullscreen></iframe>
         </div>
@@ -238,7 +343,7 @@
       </div>`;
   }
 
-  // COMMUNITY
+  // ─── COMMUNITY ───
   function renderCommunity() {
     setActiveTab('community');
     const msgs = Store.getMessages();
@@ -246,9 +351,9 @@
 
     app.innerHTML = `
       <div class="page page-community">
-        <header class="page-header">
-          <h1 class="page-title">${icon('users', 22)} Community</h1>
-        </header>
+        <div class="inner-header">
+          <h1 class="inner-header-title">${icon('users', 20)} Community</h1>
+        </div>
 
         <div class="chat-container" id="chatContainer">
           ${msgs.length
@@ -259,7 +364,7 @@
                   <span class="chat-time">${timeAgo(m.timestamp)}</span>
                 </div>`).join('')
             : `<div class="empty-community">
-                <p class="empty-icon">${icon('leaf', 40)}</p>
+                <p class="empty-icon">${icon('leaf', 48)}</p>
                 <p>The community is just getting started.</p>
                 <p>Share what you're trying, ask a question, or just say hello.</p>
               </div>`
@@ -267,16 +372,14 @@
         </div>
 
         <form class="chat-form" id="chatForm">
-          <input type="text" id="chatInput" placeholder="Share something with the community..." autocomplete="off" required>
+          <input type="text" id="chatInput" placeholder="Share something..." autocomplete="off" required>
           <button type="submit" class="send-btn">${icon('send', 18)}</button>
         </form>
       </div>`;
 
-    // Scroll to bottom
     const container = $('#chatContainer');
     container.scrollTop = container.scrollHeight;
 
-    // Submit handler
     $('#chatForm').addEventListener('submit', e => {
       e.preventDefault();
       const input = $('#chatInput');
@@ -288,72 +391,126 @@
     });
   }
 
-  // SETTINGS
+  // ─── SETTINGS ───
   function renderSettings() {
     setActiveTab('settings');
     const profile = Store.getProfile();
     const reminder = Store.getReminder();
 
     app.innerHTML = `
-      <div class="page page-settings">
-        <header class="page-header">
-          <h1 class="page-title">${icon('settings', 22)} Settings</h1>
-        </header>
+      <div class="page">
+        <div class="inner-header">
+          <button class="back-btn" onclick="Router.navigate('/')">${icon('arrowLeft', 18)}</button>
+          <h1 class="inner-header-title">${icon('settings', 20)} Settings</h1>
+        </div>
+        <div class="page-settings">
+          <section class="settings-group">
+            <h2>Your Profile</h2>
 
-        <section class="settings-group">
-          <h2>Your Profile</h2>
-          <label class="field-label">Your Name
-            <input type="text" id="settingName" value="${escapeHtml(profile.name)}" placeholder="How should Mama Juba call you?">
-          </label>
+            <div class="profile-display-card" id="profileNameCard">
+              <div class="profile-display-info">
+                <span class="profile-display-label">Name</span>
+                <span class="profile-display-value" id="profileNameValue">${escapeHtml(profile.name)}</span>
+              </div>
+              <button class="profile-edit-btn" id="editNameBtn" aria-label="Edit name">${icon('pen', 16)}</button>
+            </div>
+            <div class="profile-edit-field" id="profileNameEdit" style="display:none">
+              <input type="text" id="settingName" value="${escapeHtml(profile.name)}" placeholder="Your first name">
+              <button class="profile-done-btn" id="doneNameBtn">${icon('check', 16)} Done</button>
+            </div>
 
-          <h3 class="field-sublabel">Safety Alerts</h3>
-          <p class="field-hint">Check any that apply to you. Recipes with these ingredients will show a warning.</p>
-          <label class="checkbox-row">
-            <input type="checkbox" id="flagBlood" ${profile.warnings?.includes('bloodThinners') ? 'checked' : ''}>
-            I take blood thinners
-          </label>
-          <label class="checkbox-row">
-            <input type="checkbox" id="flagPregnancy" ${profile.warnings?.includes('pregnancy') ? 'checked' : ''}>
-            I am pregnant or may be pregnant
-          </label>
-        </section>
+            <div class="profile-display-card" id="profileEmailCard">
+              <div class="profile-display-info">
+                <span class="profile-display-label">Email</span>
+                <span class="profile-display-value" id="profileEmailValue">${escapeHtml(profile.email || '')}</span>
+              </div>
+              <button class="profile-edit-btn" id="editEmailBtn" aria-label="Edit email">${icon('pen', 16)}</button>
+            </div>
+            <div class="profile-edit-field" id="profileEmailEdit" style="display:none">
+              <input type="email" id="settingEmail" value="${escapeHtml(profile.email || '')}" placeholder="your.email@example.com">
+              <button class="profile-done-btn" id="doneEmailBtn">${icon('check', 16)} Done</button>
+            </div>
 
-        <section class="settings-group">
-          <h2>Water Reminder</h2>
-          <label class="checkbox-row">
-            <input type="checkbox" id="reminderToggle" ${reminder.enabled ? 'checked' : ''}>
-            Remind me to drink water
-          </label>
-          <label class="field-label">Every
-            <select id="reminderInterval">
-              <option value="1" ${reminder.intervalHrs === 1 ? 'selected' : ''}>1 hour</option>
-              <option value="2" ${reminder.intervalHrs === 2 ? 'selected' : ''}>2 hours</option>
-              <option value="3" ${reminder.intervalHrs === 3 ? 'selected' : ''}>3 hours</option>
-            </select>
-          </label>
-        </section>
+            <h3 class="field-sublabel" style="margin-top:20px">Safety Alerts</h3>
+            <p class="field-hint">Check any that apply. Recipes with these ingredients will show a warning.</p>
+            <label class="checkbox-row">
+              <input type="checkbox" id="flagBlood" ${profile.warnings?.includes('bloodThinners') ? 'checked' : ''}>
+              I take blood thinners
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="flagPregnancy" ${profile.warnings?.includes('pregnancy') ? 'checked' : ''}>
+              I am pregnant or may be pregnant
+            </label>
+          </section>
 
-        <button class="btn-save" id="saveSettings">Save Settings</button>
+          <section class="settings-group">
+            <h2>Water Reminder</h2>
+            <label class="checkbox-row">
+              <input type="checkbox" id="reminderToggle" ${reminder.enabled ? 'checked' : ''}>
+              Remind me to drink water
+            </label>
+            <label class="field-label">Every
+              <select id="reminderInterval">
+                <option value="1" ${reminder.intervalHrs === 1 ? 'selected' : ''}>1 hour</option>
+                <option value="2" ${reminder.intervalHrs === 2 ? 'selected' : ''}>2 hours</option>
+                <option value="3" ${reminder.intervalHrs === 3 ? 'selected' : ''}>3 hours</option>
+              </select>
+            </label>
+          </section>
 
-        <section class="settings-group">
-          <h2>Subscription</h2>
-          <p class="field-hint">Manage your plan on Hotmart.</p>
-          <a href="https://app-vlc.hotmart.com/my-account" target="_blank" class="btn-outline-settings">Manage Subscription →</a>
-        </section>
+          <section class="settings-group">
+            <h2>Text Size</h2>
+            <div class="font-size-row">
+              <button class="font-size-btn" id="fontSmall">A-</button>
+              <button class="font-size-btn" id="fontNormal">Normal</button>
+              <button class="font-size-btn" id="fontLarge">A+</button>
+            </div>
+          </section>
+
+          <button class="btn-primary" id="saveSettings">Save Settings</button>
+
+          <section class="settings-group">
+            <h2>Subscription</h2>
+            <p class="field-hint">Manage your plan on Hotmart.</p>
+            <a href="https://app-vlc.hotmart.com/my-account" target="_blank" class="btn-outline">Manage Subscription ${icon('arrowRight', 16)}</a>
+          </section>
+        </div>
       </div>`;
+
+    // Profile edit toggles
+    $('#editNameBtn').addEventListener('click', () => {
+      $('#profileNameCard').style.display = 'none';
+      $('#profileNameEdit').style.display = 'flex';
+      $('#settingName').focus();
+    });
+    $('#doneNameBtn').addEventListener('click', () => {
+      const val = $('#settingName').value.trim();
+      $('#profileNameValue').textContent = val;
+      $('#profileNameEdit').style.display = 'none';
+      $('#profileNameCard').style.display = 'flex';
+    });
+    $('#editEmailBtn').addEventListener('click', () => {
+      $('#profileEmailCard').style.display = 'none';
+      $('#profileEmailEdit').style.display = 'flex';
+      $('#settingEmail').focus();
+    });
+    $('#doneEmailBtn').addEventListener('click', () => {
+      const val = $('#settingEmail').value.trim();
+      $('#profileEmailValue').textContent = val;
+      $('#profileEmailEdit').style.display = 'none';
+      $('#profileEmailCard').style.display = 'flex';
+    });
 
     $('#saveSettings').addEventListener('click', () => {
       const warnings = [];
       if ($('#flagBlood').checked) warnings.push('bloodThinners');
       if ($('#flagPregnancy').checked) warnings.push('pregnancy');
-
-      Store.setProfile({ name: $('#settingName').value.trim(), warnings });
+      Store.setProfile({ name: $('#settingName').value.trim(), email: $('#settingEmail').value.trim(), warnings });
 
       const enabled = $('#reminderToggle').checked;
       const intervalHrs = parseInt($('#reminderInterval').value);
       Store.setReminder({ enabled, intervalHrs });
 
-      // Schedule notification
       if (enabled && 'serviceWorker' in navigator) {
         Notification.requestPermission().then(perm => {
           if (perm === 'granted' && navigator.serviceWorker.controller) {
@@ -364,19 +521,27 @@
           }
         });
       }
-
       showToast('Settings saved!');
+    });
+
+    $('#fontSmall').addEventListener('click', () => {
+      Store.set('fontSize', 0.9);
+      document.documentElement.style.setProperty('--font-scale', 0.9);
+      showToast('Text size: small');
+    });
+    $('#fontNormal').addEventListener('click', () => {
+      Store.set('fontSize', 1);
+      document.documentElement.style.setProperty('--font-scale', 1);
+      showToast('Text size: normal');
+    });
+    $('#fontLarge').addEventListener('click', () => {
+      Store.set('fontSize', 1.12);
+      document.documentElement.style.setProperty('--font-scale', 1.12);
+      showToast('Text size: large');
     });
   }
 
   // ─── Utilities ───
-  function getGreeting() {
-    const h = new Date().getHours();
-    if (h < 12) return 'morning';
-    if (h < 18) return 'afternoon';
-    return 'evening';
-  }
-
   function escapeHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
@@ -402,16 +567,189 @@
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2000);
   }
 
-  // ─── Delegate fav clicks globally ───
+  // ─── Haptic feedback ───
+  function haptic() {
+    navigator.vibrate && navigator.vibrate(12);
+  }
+
+  // ─── Visual tap feedback ───
+  document.addEventListener('click', e => {
+    const tappable = e.target.closest('.recipe-card, .cat-card, .program-start-card, .program-today-btn, .video-card');
+    if (tappable) { tappable.classList.add('tapped'); setTimeout(() => tappable.classList.remove('tapped'), 250); }
+  });
+
+  // ─── Check-in (moved to settings, kept for future use) ───
+  window.submitCheckin = function(score) {
+    haptic();
+    Store.addCheckin(score);
+    Store.bumpStreak();
+    showToast(['', 'Hang in there.', 'Tomorrow will be better.', 'Steady.', 'Keep going!', 'Wonderful!'][score]);
+  };
+
+  window.startProgram = function() {
+    haptic();
+    Store.startProgram();
+    Store.bumpStreak();
+    showToast('Your 30-day journey begins today!');
+    renderHome();
+  };
+
+  // ─── Global fav click delegate ───
   document.addEventListener('click', e => {
     const btn = e.target.closest('.fav-btn');
     if (!btn) return;
     e.stopPropagation();
+    haptic();
     const id = btn.dataset.recipe;
     const isFav = Store.toggleFavorite(id);
     btn.classList.toggle('is-fav', isFav);
-    btn.innerHTML = isFav ? icon('starFilled', 20) : icon('star', 20);
+    btn.innerHTML = isFav ? icon('starFilled', 22) : icon('star', 22);
   });
+
+  // ─── ONBOARDING ───
+  function renderOnboarding() {
+    // Hide tab bar during onboarding
+    const tabBar = document.querySelector('.tab-bar');
+    if (tabBar) tabBar.style.display = 'none';
+
+    app.innerHTML = `
+      <div class="onboarding">
+        <div class="onboarding-hero">
+          <img src="img/hero-banner.webp" alt="">
+          <div class="onboarding-hero-overlay"></div>
+          <div class="onboarding-hero-text">
+            <h1>Mama Juba's<br>Almanac</h1>
+            <p>Six generations of healing wisdom</p>
+          </div>
+        </div>
+
+        <div class="onboarding-form" id="onboardingForm">
+          <p class="onboarding-step-label">Let's get started</p>
+
+          <div class="onboarding-field">
+            <label for="obName">What's your first name?</label>
+            <input type="text" id="obName" placeholder="Your first name" autocomplete="given-name">
+          </div>
+
+          <div class="onboarding-field">
+            <label for="obEmail">What's your email?</label>
+            <input type="email" id="obEmail" placeholder="your.email@example.com" autocomplete="email">
+          </div>
+
+          <p class="onboarding-hint">${icon('check', 14)} You only need to do this once. Your access stays saved on this device.</p>
+
+          <button class="onboarding-btn" id="obSubmit" disabled>Continue</button>
+        </div>
+      </div>`;
+
+    const nameInput = $('#obName');
+    const emailInput = $('#obEmail');
+    const submitBtn = $('#obSubmit');
+
+    function validate() {
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      submitBtn.disabled = !(name.length >= 1 && emailOk);
+    }
+
+    nameInput.addEventListener('input', validate);
+    emailInput.addEventListener('input', validate);
+
+    submitBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      Store.setProfile({ name, email, warnings: [] });
+      showTutorial(name, email);
+    });
+  }
+
+  function showTutorial(name, email) {
+    // Render the real app behind the coach marks
+    Store.setProfile({ name, email, warnings: [] });
+    const tabBar = document.querySelector('.tab-bar');
+    if (tabBar) tabBar.style.display = 'flex';
+    initTabs();
+    renderHome();
+
+    const steps = [
+      { target: '.home-hero', text: 'This is your daily greeting. Open the app every day to see your protocol.', arrow: 'down' },
+      { target: '.program-start-card, .program-today-card', text: 'Your 30-day guided journey. Mama Juba picks one recipe for you each day.', arrow: 'down' },
+      { target: '.cat-grid', text: 'Tap any symptom to browse all recipes for that area.', arrow: 'up' },
+      { target: '.tab-bar', text: 'Use these tabs to switch between recipes, videos, community, and settings.', arrow: 'up' }
+    ];
+    let step = 0;
+
+    function showStep() {
+      const prev = document.querySelector('.coach-overlay');
+      if (prev) prev.remove();
+      if (step >= steps.length) return;
+
+      const s = steps[step];
+      const el = document.querySelector(s.target);
+      if (!el) { step++; showStep(); return; }
+
+      const rect = el.getBoundingClientRect();
+      const isLast = step === steps.length - 1;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'coach-overlay';
+
+      // Tooltip position
+      let tooltipStyle;
+      if (s.arrow === 'up') {
+        tooltipStyle = `bottom:${window.innerHeight - rect.top + 20}px;left:20px;right:20px;`;
+      } else {
+        tooltipStyle = `top:${rect.bottom + 20}px;left:20px;right:20px;`;
+      }
+
+      overlay.innerHTML = `
+        <div class="coach-backdrop" id="coachBackdrop"></div>
+        <div class="coach-spotlight" style="top:${rect.top - 8}px;left:${rect.left - 8}px;width:${rect.width + 16}px;height:${rect.height + 16}px;border-radius:16px"></div>
+        <div class="coach-tooltip coach-arrow-${s.arrow}" style="${tooltipStyle}">
+          <p class="coach-text">${s.text}</p>
+          <div class="coach-bottom">
+            <span class="coach-counter">${step + 1} of ${steps.length}</span>
+            <button class="coach-btn" id="coachNext">${isLast ? 'Got it!' : 'Next'}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      document.getElementById('coachNext').addEventListener('click', () => {
+        haptic();
+        overlay.remove();
+        step++;
+        if (step < steps.length) showStep();
+      });
+
+      document.getElementById('coachBackdrop').addEventListener('click', () => {
+        haptic();
+        overlay.remove();
+        step++;
+        if (step < steps.length) showStep();
+      });
+    }
+
+    setTimeout(showStep, 500);
+  }
+
+  function showWelcomeSplash(name) {
+    const tabBar = document.querySelector('.tab-bar');
+    if (tabBar) tabBar.style.display = 'none';
+
+    app.innerHTML = `
+      <div class="welcome-splash">
+        <div class="welcome-splash-icon">${icon('leaf', 32)}</div>
+        <h1>Welcome, ${escapeHtml(name)}.</h1>
+        <p>Your healing protocol is ready.</p>
+      </div>`;
+
+    setTimeout(() => {
+      if (tabBar) tabBar.style.display = 'flex';
+      Router.navigate('/');
+    }, 2200);
+  }
 
   // ─── Routes ───
   Router.register('/', renderHome);
@@ -423,12 +761,46 @@
   Router.register('/settings', renderSettings);
 
   // ─── Boot ───
-  initTabs();
-  Router.start();
+  if (Store.isLoggedIn()) {
+    initTabs();
+    Router.start();
+  } else {
+    renderOnboarding();
+    // After onboarding, boot the router
+    const origNavigate = Router.navigate.bind(Router);
+    Router.navigate = function(path) {
+      initTabs();
+      Router.navigate = origNavigate;
+      Router.start();
+    };
+  }
 
-  // Register service worker
+  // Apply saved font size
+  document.documentElement.style.setProperty('--font-scale', Store.get('fontSize') || 1);
+
+  // Help floating button
+  const helpBtn = document.createElement('button');
+  helpBtn.className = 'help-fab';
+  helpBtn.innerHTML = '?';
+  helpBtn.onclick = () => { window.location.href = 'mailto:support@mamajubaalmanac.com?subject=Help%20with%20Jubapp'; };
+  document.getElementById('shell').appendChild(helpBtn);
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
+  // Push notification (daily morning)
+  if ('Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted' && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_DAILY' });
+        }
+      });
+    }, 10000);
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.active.postMessage({ type: 'SCHEDULE_DAILY' });
+    });
+  }
 })();

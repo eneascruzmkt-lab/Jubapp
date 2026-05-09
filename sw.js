@@ -36,10 +36,13 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Water reminder notification
+// Notifications
 self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SCHEDULE_REMINDER') {
-    const interval = e.data.intervalMs || 7200000; // default 2h
+  if (!e.data) return;
+
+  // Water reminder
+  if (e.data.type === 'SCHEDULE_REMINDER') {
+    const interval = e.data.intervalMs || 7200000;
     setInterval(() => {
       self.registration.showNotification('Mama Juba\'s Almanac', {
         body: 'Time to drink water, dear. Your body will thank you.',
@@ -49,4 +52,37 @@ self.addEventListener('message', e => {
       });
     }, interval);
   }
+
+  // Daily morning notification
+  if (e.data.type === 'SCHEDULE_DAILY') {
+    function scheduleMorning() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(8, 0, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      const ms = next - now;
+      setTimeout(() => {
+        self.registration.showNotification('Mama Juba\'s Almanac', {
+          body: 'Good morning. Your daily recipe is ready.',
+          icon: 'icons/icon-192.png',
+          badge: 'icons/icon-192.png',
+          tag: 'daily-morning'
+        });
+        // Schedule next day
+        scheduleMorning();
+      }, ms);
+    }
+    scheduleMorning();
+  }
+});
+
+// Open app on notification click
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then(clients => {
+      if (clients.length) return clients[0].focus();
+      return self.clients.openWindow('/');
+    })
+  );
 });

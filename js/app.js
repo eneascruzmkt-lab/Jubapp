@@ -378,21 +378,12 @@
   function renderCommunity() {
     setActiveTab('community');
     const profile = Store.getProfile();
-    const posts = Store.getPosts();
     const dq = getDailyQuestion();
     const dailyAnswer = Store.getDailyAnswer();
 
-    // Combine seed posts + user posts
-    const allPosts = [...posts];
-    SEED_POSTS.forEach(sp => {
-      if (!allPosts.find(p => p.author === sp.author && p.text === sp.text)) {
-        allPosts.push({
-          ...sp,
-          id: sp.author + sp.daysAgo,
-          timestamp: new Date(Date.now() - sp.daysAgo * 86400000).toISOString()
-        });
-      }
-    });
+    // Init seed posts once, then everything comes from Store
+    Store.initSeedPosts(SEED_POSTS);
+    const allPosts = [...Store.getPosts()];
     allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     // Daily question input
@@ -442,13 +433,6 @@
         </div>`;
     }
 
-    // Prompt buttons
-    const prompts = [
-      'I tried a recipe today!',
-      'Feeling better this week.',
-      'Need encouragement.',
-      'Just saying hello.'
-    ];
 
     app.innerHTML = `
       <div class="page">
@@ -461,18 +445,6 @@
           <div class="community-section">
             <h2 class="community-section-label">Today's Question</h2>
             ${dqHTML}
-          </div>
-
-          <!-- Share -->
-          <div class="community-section">
-            <h2 class="community-section-label">Share with the community</h2>
-            <div class="post-prompts">
-              ${prompts.map(p => `<button class="post-prompt-btn" onclick="postFromPrompt('${escapeHtml(p)}')">${p}</button>`).join('')}
-            </div>
-            <form class="post-form" id="postForm">
-              <input type="text" id="postInput" placeholder="Write something..." autocomplete="off">
-              <button type="submit" class="post-submit-btn">${icon('send', 16)} Post</button>
-            </form>
           </div>
 
           <!-- Feed -->
@@ -489,7 +461,7 @@
                     </div>
                   </div>
                   <p class="post-text">${escapeHtml(p.text)}</p>
-                  <button class="post-like-btn ${p.liked ? 'liked' : ''}" onclick="likePost(${p.id})">
+                  <button class="post-like-btn ${p.liked ? 'liked' : ''}" onclick="likePost('${p.id}')">
                     ${icon('heart', 16)} <span>${p.likes || ''}</span>
                   </button>
                 </div>
@@ -499,21 +471,6 @@
 
         </div>
       </div>`;
-
-    // Post form
-    const postForm = $('#postForm');
-    if (postForm) {
-      postForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const input = $('#postInput');
-        const text = input.value.trim();
-        if (!text) return;
-        Store.addPost({ author: profile.name || 'Anonymous', text });
-        haptic();
-        showToast('Posted!');
-        renderCommunity();
-      });
-    }
 
     // Daily question text form
     const dqForm = $('#dqForm');
@@ -534,14 +491,6 @@
     Store.setDailyAnswer(answer);
     haptic();
     showToast('Thank you for sharing.');
-    renderCommunity();
-  };
-
-  window.postFromPrompt = function(text) {
-    const profile = Store.getProfile();
-    Store.addPost({ author: profile.name || 'Anonymous', text });
-    haptic();
-    showToast('Posted!');
     renderCommunity();
   };
 

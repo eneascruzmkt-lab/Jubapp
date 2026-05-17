@@ -141,9 +141,26 @@ const Store = {
     return this.get('communityPosts') || [];
   },
 
+  initSeedPosts(seedPosts) {
+    if (this.get('seedPostsInit')) return;
+    const posts = this.getPosts();
+    seedPosts.forEach(sp => {
+      posts.push({
+        id: 'seed-' + sp.daysAgo,
+        author: sp.author,
+        text: sp.text,
+        likes: sp.likes,
+        liked: false,
+        timestamp: new Date(Date.now() - sp.daysAgo * 86400000).toISOString()
+      });
+    });
+    this.set('communityPosts', posts);
+    this.set('seedPostsInit', true);
+  },
+
   addPost(post) {
     const posts = this.getPosts();
-    posts.unshift({ ...post, id: Date.now(), timestamp: new Date().toISOString(), likes: 0, liked: false });
+    posts.unshift({ ...post, id: 'u-' + Date.now(), timestamp: new Date().toISOString(), likes: 0, liked: false });
     this.set('communityPosts', posts);
   },
 

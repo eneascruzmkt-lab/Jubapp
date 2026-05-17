@@ -942,26 +942,49 @@ a { color: var(--primary); text-decoration: none; }
   margin: 0;
 }
 
-/* Post prompts */
-.post-prompts {
+/* Room tabs */
+.room-tabs {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
 }
-.post-prompt-btn {
-  padding: 9px 14px;
+.room-tabs::-webkit-scrollbar { display: none; }
+.room-tab {
+  padding: 8px 16px;
   border: 1.5px solid var(--border);
   border-radius: 20px;
   background: var(--bg-card);
   font-family: var(--font-body);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--t);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.post-prompt-btn:active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.room-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.room-tab:active { transform: scale(0.95); }
+
+/* Post room badge */
+.post-room-badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
 
 /* Post form */
 .post-form {

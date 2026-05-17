@@ -361,13 +361,23 @@
     { q: 'Did you try something new from the Almanac this week?', type: 'yesno' }
   ];
 
+  const COMMUNITY_ROOMS = [
+    { id: 'all', label: 'All' },
+    { id: 'recipes', label: 'Recipes' },
+    { id: 'results', label: 'Results' },
+    { id: 'support', label: 'Support' },
+    { id: 'general', label: 'General' }
+  ];
+
+  let activeRoom = 'all';
+
   const SEED_POSTS = [
-    { author: 'Martha R.', text: 'I tried the Golden Joint Tea this morning. My knees feel different already. Day 3.', likes: 12, liked: false, daysAgo: 1 },
-    { author: 'Dorothy L.', text: 'The Cinnamon Sleep Milk is now my evening ritual. I slept through the whole night for the first time in months.', likes: 24, liked: false, daysAgo: 2 },
-    { author: 'James W.', text: 'My wife and I are doing the 30-day protocol together. Day 8. She says her brain fog is lifting.', likes: 18, liked: false, daysAgo: 3 },
-    { author: 'Patricia M.', text: 'Started the Hibiscus Heart Tea. My numbers went from 148 to 132 in two weeks. My doctor noticed.', likes: 31, liked: false, daysAgo: 5 },
-    { author: 'Helen K.', text: 'I was skeptical. I admit it. But the Belly Ease Brew stopped my bloating after every meal. Simple ginger and peppermint.', likes: 15, liked: false, daysAgo: 4 },
-    { author: 'Robert S.', text: 'The Rosemary Memory Tea. I can remember my grandchildren\'s phone numbers again. Small thing, but it means everything.', likes: 22, liked: false, daysAgo: 6 }
+    { author: 'Martha R.', text: 'I tried the Golden Joint Tea this morning. My knees feel different already. Day 3.', likes: 12, liked: false, daysAgo: 1, room: 'recipes' },
+    { author: 'Dorothy L.', text: 'The Cinnamon Sleep Milk is now my evening ritual. I slept through the whole night for the first time in months.', likes: 24, liked: false, daysAgo: 2, room: 'results' },
+    { author: 'James W.', text: 'My wife and I are doing the 30-day protocol together. Day 8. She says her brain fog is lifting.', likes: 18, liked: false, daysAgo: 3, room: 'support' },
+    { author: 'Patricia M.', text: 'Started the Hibiscus Heart Tea. My numbers went from 148 to 132 in two weeks. My doctor noticed.', likes: 31, liked: false, daysAgo: 5, room: 'results' },
+    { author: 'Helen K.', text: 'I was skeptical. I admit it. But the Belly Ease Brew stopped my bloating after every meal. Simple ginger and peppermint.', likes: 15, liked: false, daysAgo: 4, room: 'recipes' },
+    { author: 'Robert S.', text: 'The Rosemary Memory Tea. I can remember my grandchildren\'s phone numbers again. Small thing, but it means everything.', likes: 22, liked: false, daysAgo: 6, room: 'results' }
   ];
 
   function getDailyQuestion() {
@@ -383,7 +393,10 @@
 
     // Init seed posts once, then everything comes from Store
     Store.initSeedPosts(SEED_POSTS);
-    const allPosts = [...Store.getPosts()];
+    let allPosts = [...Store.getPosts()];
+    if (activeRoom !== 'all') {
+      allPosts = allPosts.filter(p => p.room === activeRoom);
+    }
     allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     // Daily question input
@@ -447,9 +460,23 @@
             ${dqHTML}
           </div>
 
+          <!-- Rooms -->
+          <div class="community-section">
+            <div class="room-tabs">
+              ${COMMUNITY_ROOMS.map(r => `<button class="room-tab ${activeRoom === r.id ? 'active' : ''}" onclick="switchRoom('${r.id}')">${r.label}</button>`).join('')}
+            </div>
+          </div>
+
+          <!-- Write post -->
+          <div class="community-section">
+            <form class="post-form" id="postForm">
+              <input type="text" id="postInput" placeholder="Share something..." autocomplete="off">
+              <button type="submit" class="post-submit-btn">${icon('send', 16)} Post</button>
+            </form>
+          </div>
+
           <!-- Feed -->
           <div class="community-section">
-            <h2 class="community-section-label">Healing Stories</h2>
             <div class="post-feed">
               ${allPosts.map(p => `
                 <div class="post-card">
@@ -459,6 +486,7 @@
                       <span class="post-author">${escapeHtml(p.author)}</span>
                       <span class="post-time">${timeAgo(p.timestamp)}</span>
                     </div>
+                    ${p.room ? `<span class="post-room-badge">${p.room}</span>` : ''}
                   </div>
                   <p class="post-text">${escapeHtml(p.text)}</p>
                   <button class="post-like-btn ${p.liked ? 'liked' : ''}" onclick="likePost('${p.id}')">
@@ -471,6 +499,21 @@
 
         </div>
       </div>`;
+
+    // Post form
+    const postForm = $('#postForm');
+    if (postForm) {
+      postForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const input = $('#postInput');
+        const text = input.value.trim();
+        if (!text) return;
+        Store.addPost({ author: profile.name || 'Anonymous', text, room: activeRoom === 'all' ? 'general' : activeRoom });
+        haptic();
+        showToast('Posted!');
+        renderCommunity();
+      });
+    }
 
     // Daily question text form
     const dqForm = $('#dqForm');
@@ -491,6 +534,12 @@
     Store.setDailyAnswer(answer);
     haptic();
     showToast('Thank you for sharing.');
+    renderCommunity();
+  };
+
+  window.switchRoom = function(roomId) {
+    activeRoom = roomId;
+    haptic();
     renderCommunity();
   };
 

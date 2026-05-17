@@ -142,7 +142,10 @@ const Store = {
   },
 
   initSeedPosts(seedPosts) {
-    if (this.get('seedPostsInit')) return;
+    if (this.get('seedPostsVersion') === 2) return;
+    // Clear old seed data on version upgrade
+    const existing = this.getPosts().filter(p => !String(p.id).startsWith('seed-'));
+    this.set('communityPosts', existing);
     const posts = this.getPosts();
     seedPosts.forEach(sp => {
       posts.push({
@@ -151,11 +154,12 @@ const Store = {
         text: sp.text,
         likes: sp.likes,
         liked: false,
+        room: sp.room || 'general',
         timestamp: new Date(Date.now() - sp.daysAgo * 86400000).toISOString()
       });
     });
     this.set('communityPosts', posts);
-    this.set('seedPostsInit', true);
+    this.set('seedPostsVersion', 2);
   },
 
   addPost(post) {

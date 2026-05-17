@@ -344,52 +344,212 @@
   }
 
   // ─── COMMUNITY ───
+  const DAILY_QUESTIONS = [
+    { q: 'What recipe did you try today?', type: 'recipe' },
+    { q: 'How did you sleep last night?', type: 'stars' },
+    { q: 'Share one thing your body thanked you for this week.', type: 'text' },
+    { q: 'Which ingredient do you always have in your kitchen?', type: 'text' },
+    { q: 'How are your joints feeling today?', type: 'stars' },
+    { q: 'What is one small change you noticed since starting?', type: 'text' },
+    { q: 'Did you drink enough water today?', type: 'yesno' },
+    { q: 'How is your energy level right now?', type: 'stars' },
+    { q: 'What recipe are you most curious about?', type: 'text' },
+    { q: 'Have you shared a recipe with someone you love?', type: 'yesno' },
+    { q: 'Which part of your body feels better than last week?', type: 'text' },
+    { q: 'How clearly is your mind thinking today?', type: 'stars' },
+    { q: 'What is one thing you are grateful for today?', type: 'text' },
+    { q: 'Did you try something new from the Almanac this week?', type: 'yesno' }
+  ];
+
+  const SEED_POSTS = [
+    { author: 'Martha R.', text: 'I tried the Golden Joint Tea this morning. My knees feel different already. Day 3.', likes: 12, liked: false, daysAgo: 1 },
+    { author: 'Dorothy L.', text: 'The Cinnamon Sleep Milk is now my evening ritual. I slept through the whole night for the first time in months.', likes: 24, liked: false, daysAgo: 2 },
+    { author: 'James W.', text: 'My wife and I are doing the 30-day protocol together. Day 8. She says her brain fog is lifting.', likes: 18, liked: false, daysAgo: 3 },
+    { author: 'Patricia M.', text: 'Started the Hibiscus Heart Tea. My numbers went from 148 to 132 in two weeks. My doctor noticed.', likes: 31, liked: false, daysAgo: 5 },
+    { author: 'Helen K.', text: 'I was skeptical. I admit it. But the Belly Ease Brew stopped my bloating after every meal. Simple ginger and peppermint.', likes: 15, liked: false, daysAgo: 4 },
+    { author: 'Robert S.', text: 'The Rosemary Memory Tea. I can remember my grandchildren\'s phone numbers again. Small thing, but it means everything.', likes: 22, liked: false, daysAgo: 6 }
+  ];
+
+  function getDailyQuestion() {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    return DAILY_QUESTIONS[dayOfYear % DAILY_QUESTIONS.length];
+  }
+
   function renderCommunity() {
     setActiveTab('community');
-    const msgs = Store.getMessages();
     const profile = Store.getProfile();
+    const posts = Store.getPosts();
+    const dq = getDailyQuestion();
+    const dailyAnswer = Store.getDailyAnswer();
+
+    // Combine seed posts + user posts
+    const allPosts = [...posts];
+    SEED_POSTS.forEach(sp => {
+      if (!allPosts.find(p => p.author === sp.author && p.text === sp.text)) {
+        allPosts.push({
+          ...sp,
+          id: sp.author + sp.daysAgo,
+          timestamp: new Date(Date.now() - sp.daysAgo * 86400000).toISOString()
+        });
+      }
+    });
+    allPosts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Daily question input
+    let dqHTML = '';
+    if (dailyAnswer) {
+      dqHTML = `
+        <div class="dq-answered">
+          <span class="dq-check">${icon('check', 16)}</span>
+          <div>
+            <p class="dq-q">${dq.q}</p>
+            <p class="dq-a">${escapeHtml(dailyAnswer)}</p>
+          </div>
+        </div>`;
+    } else if (dq.type === 'stars') {
+      dqHTML = `
+        <div class="dq-card">
+          <p class="dq-q">${dq.q}</p>
+          <div class="dq-stars">
+            ${[1,2,3,4,5].map(n => `<button class="dq-star" onclick="answerDaily('${n}/5')">${n <= 3 ? '☆' : '★'}</button>`).join('')}
+          </div>
+        </div>`;
+    } else if (dq.type === 'yesno') {
+      dqHTML = `
+        <div class="dq-card">
+          <p class="dq-q">${dq.q}</p>
+          <div class="dq-yesno">
+            <button class="dq-yn-btn" onclick="answerDaily('Yes')">Yes</button>
+            <button class="dq-yn-btn" onclick="answerDaily('No')">Not yet</button>
+          </div>
+        </div>`;
+    } else if (dq.type === 'recipe') {
+      dqHTML = `
+        <div class="dq-card">
+          <p class="dq-q">${dq.q}</p>
+          <div class="dq-recipes">
+            ${RECIPES.slice(0, 6).map(r => `<button class="dq-recipe-btn" onclick="answerDaily('${escapeHtml(r.title)}')">${r.title}</button>`).join('')}
+          </div>
+        </div>`;
+    } else {
+      dqHTML = `
+        <div class="dq-card">
+          <p class="dq-q">${dq.q}</p>
+          <form class="dq-text-form" id="dqForm">
+            <input type="text" id="dqInput" placeholder="Type your answer..." autocomplete="off">
+            <button type="submit" class="dq-submit">${icon('send', 16)}</button>
+          </form>
+        </div>`;
+    }
+
+    // Prompt buttons
+    const prompts = [
+      'I tried a recipe today!',
+      'Feeling better this week.',
+      'Need encouragement.',
+      'Just saying hello.'
+    ];
 
     app.innerHTML = `
-      <div class="page page-community">
+      <div class="page">
         <div class="inner-header">
           <h1 class="inner-header-title">${icon('users', 20)} Community</h1>
         </div>
+        <div class="community-body">
 
-        <div class="chat-container" id="chatContainer">
-          ${msgs.length
-            ? msgs.map(m => `
-                <div class="chat-bubble ${m.author === profile.name ? 'mine' : ''}">
-                  <span class="chat-author">${m.author}</span>
-                  <p>${escapeHtml(m.text)}</p>
-                  <span class="chat-time">${timeAgo(m.timestamp)}</span>
-                </div>`).join('')
-            : `<div class="empty-community">
-                <p class="empty-icon">${icon('leaf', 48)}</p>
-                <p>The community is just getting started.</p>
-                <p>Share what you're trying, ask a question, or just say hello.</p>
-              </div>`
-          }
+          <!-- Daily Question -->
+          <div class="community-section">
+            <h2 class="community-section-label">Today's Question</h2>
+            ${dqHTML}
+          </div>
+
+          <!-- Share -->
+          <div class="community-section">
+            <h2 class="community-section-label">Share with the community</h2>
+            <div class="post-prompts">
+              ${prompts.map(p => `<button class="post-prompt-btn" onclick="postFromPrompt('${escapeHtml(p)}')">${p}</button>`).join('')}
+            </div>
+            <form class="post-form" id="postForm">
+              <input type="text" id="postInput" placeholder="Write something..." autocomplete="off">
+              <button type="submit" class="post-submit-btn">${icon('send', 16)} Post</button>
+            </form>
+          </div>
+
+          <!-- Feed -->
+          <div class="community-section">
+            <h2 class="community-section-label">Healing Stories</h2>
+            <div class="post-feed">
+              ${allPosts.map(p => `
+                <div class="post-card">
+                  <div class="post-header">
+                    <div class="post-avatar">${(p.author || 'A').charAt(0)}</div>
+                    <div class="post-meta">
+                      <span class="post-author">${escapeHtml(p.author)}</span>
+                      <span class="post-time">${timeAgo(p.timestamp)}</span>
+                    </div>
+                  </div>
+                  <p class="post-text">${escapeHtml(p.text)}</p>
+                  <button class="post-like-btn ${p.liked ? 'liked' : ''}" onclick="likePost(${p.id})">
+                    ${icon('heart', 16)} <span>${p.likes || ''}</span>
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
         </div>
-
-        <form class="chat-form" id="chatForm">
-          <input type="text" id="chatInput" placeholder="Share something..." autocomplete="off" required>
-          <button type="submit" class="send-btn">${icon('send', 18)}</button>
-        </form>
       </div>`;
 
-    const container = $('#chatContainer');
-    container.scrollTop = container.scrollHeight;
+    // Post form
+    const postForm = $('#postForm');
+    if (postForm) {
+      postForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const input = $('#postInput');
+        const text = input.value.trim();
+        if (!text) return;
+        Store.addPost({ author: profile.name || 'Anonymous', text });
+        haptic();
+        showToast('Posted!');
+        renderCommunity();
+      });
+    }
 
-    $('#chatForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const input = $('#chatInput');
-      const text = input.value.trim();
-      if (!text) return;
-      Store.addMessage({ author: profile.name || 'Anonymous', text });
-      input.value = '';
-      renderCommunity();
-    });
+    // Daily question text form
+    const dqForm = $('#dqForm');
+    if (dqForm) {
+      dqForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const val = $('#dqInput').value.trim();
+        if (!val) return;
+        Store.setDailyAnswer(val);
+        haptic();
+        showToast('Thank you for sharing.');
+        renderCommunity();
+      });
+    }
   }
+
+  window.answerDaily = function(answer) {
+    Store.setDailyAnswer(answer);
+    haptic();
+    showToast('Thank you for sharing.');
+    renderCommunity();
+  };
+
+  window.postFromPrompt = function(text) {
+    const profile = Store.getProfile();
+    Store.addPost({ author: profile.name || 'Anonymous', text });
+    haptic();
+    showToast('Posted!');
+    renderCommunity();
+  };
+
+  window.likePost = function(postId) {
+    Store.toggleLike(postId);
+    haptic();
+    renderCommunity();
+  };
 
   // ─── SETTINGS ───
   function renderSettings() {
@@ -778,12 +938,6 @@
   // Apply saved font size
   document.documentElement.style.setProperty('--font-scale', Store.get('fontSize') || 1);
 
-  // Help floating button
-  const helpBtn = document.createElement('button');
-  helpBtn.className = 'help-fab';
-  helpBtn.innerHTML = '?';
-  helpBtn.onclick = () => { window.location.href = 'mailto:support@mamajubaalmanac.com?subject=Help%20with%20Jubapp'; };
-  document.getElementById('shell').appendChild(helpBtn);
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});

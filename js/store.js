@@ -136,14 +136,35 @@ const Store = {
     return Math.min(diff + 1, 30); // day 1 to 30
   },
 
-  // Community messages
-  getMessages() {
-    return this.get('communityMessages') || [];
+  // Community posts (mural)
+  getPosts() {
+    return this.get('communityPosts') || [];
   },
 
-  addMessage(msg) {
-    const msgs = this.getMessages();
-    msgs.push({ ...msg, id: Date.now(), timestamp: new Date().toISOString() });
-    this.set('communityMessages', msgs);
+  addPost(post) {
+    const posts = this.getPosts();
+    posts.unshift({ ...post, id: Date.now(), timestamp: new Date().toISOString(), likes: 0, liked: false });
+    this.set('communityPosts', posts);
+  },
+
+  toggleLike(postId) {
+    const posts = this.getPosts();
+    const p = posts.find(x => x.id === postId);
+    if (!p) return;
+    p.liked = !p.liked;
+    p.likes += p.liked ? 1 : -1;
+    this.set('communityPosts', posts);
+  },
+
+  // Daily question answered
+  getDailyAnswer() {
+    const today = new Date().toISOString().slice(0, 10);
+    const data = this.get('dailyAnswer') || {};
+    return data.date === today ? data.answer : null;
+  },
+
+  setDailyAnswer(answer) {
+    const today = new Date().toISOString().slice(0, 10);
+    this.set('dailyAnswer', { date: today, answer });
   }
 };

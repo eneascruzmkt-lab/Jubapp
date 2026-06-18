@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jubapp-v1';
+const CACHE_NAME = 'ancient-apothecary-v1';
 const ASSETS = [
   '/',
   '/index.html',
@@ -44,7 +44,7 @@ self.addEventListener('message', e => {
   if (e.data.type === 'SCHEDULE_REMINDER') {
     const interval = e.data.intervalMs || 7200000;
     setInterval(() => {
-      self.registration.showNotification('Mama Juba\'s Almanac', {
+      self.registration.showNotification('Ancient Apothecary', {
         body: 'Time to drink water, dear. Your body will thank you.',
         icon: 'icons/icon-192.png',
         badge: 'icons/icon-192.png',
@@ -62,7 +62,7 @@ self.addEventListener('message', e => {
       if (next <= now) next.setDate(next.getDate() + 1);
       const ms = next - now;
       setTimeout(() => {
-        self.registration.showNotification('Mama Juba\'s Almanac', {
+        self.registration.showNotification('Ancient Apothecary', {
           body: 'Good morning. Your daily recipe is ready.',
           icon: 'icons/icon-192.png',
           badge: 'icons/icon-192.png',

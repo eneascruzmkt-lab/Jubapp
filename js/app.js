@@ -1,5 +1,5 @@
 /**
- * Jubapp,Main application logic
+ * Ancient Apothecary - Main application logic
  * Calm/Headspace-inspired UI patterns
  */
 (function () {
@@ -125,7 +125,7 @@
               <div class="program-start-left">
                 <span class="program-start-badge">30-DAY PROTOCOL</span>
                 <h3 class="program-start-title">Start your healing journey</h3>
-                <p class="program-start-sub">One recipe a day. Mama Juba walks with you.</p>
+                <p class="program-start-sub">One recipe a day. Ancient Apothecary walks with you.</p>
               </div>
               <span class="program-start-arrow">${icon('arrowRight', 20)}</span>
             </div>
@@ -259,7 +259,7 @@
 
           ${r.videoId ? `
             <div class="detail-section">
-              <h2 class="detail-section-header">Watch Mama Juba</h2>
+              <h2 class="detail-section-header">Watch the Tutorial</h2>
               <div class="video-embed">
                 <iframe src="https://www.youtube.com/embed/${r.videoId}" frameborder="0" allowfullscreen loading="lazy"></iframe>
               </div>
@@ -776,7 +776,7 @@
           <img src="img/hero-banner.webp" alt="">
           <div class="onboarding-hero-overlay"></div>
           <div class="onboarding-hero-text">
-            <h1>Mama Juba's<br>Almanac</h1>
+            <h1>Ancient<br>Apothecary</h1>
             <p>Six generations of healing wisdom</p>
           </div>
         </div>
@@ -832,7 +832,7 @@
 
     const steps = [
       { target: '.home-hero', text: 'This is your daily greeting. Open the app every day to see your protocol.', arrow: 'down' },
-      { target: '.program-start-card, .program-today-card', text: 'Your 30-day guided journey. Mama Juba picks one recipe for you each day.', arrow: 'down' },
+      { target: '.program-start-card, .program-today-card', text: 'Your 30-day guided journey. Ancient Apothecary picks one recipe for you each day.', arrow: 'down' },
       { target: '.cat-grid', text: 'Tap any symptom to browse all recipes for that area.', arrow: 'up' },
       { target: '.tab-bar', text: 'Use these tabs to switch between recipes, videos, community, and settings.', arrow: 'up' }
     ];

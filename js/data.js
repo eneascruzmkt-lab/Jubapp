@@ -1,6 +1,6 @@
 /**
  * Recipe & Video data
- * TODO: Replace placeholder content with real recipes from Mama Juba
+ * TODO: Replace placeholder content with real recipes from Ancient Apothecary
  */
 
 const CATEGORIES = [
@@ -29,7 +29,7 @@ const RECIPES = [
   {
     id: 'golden-joint-tea',
     title: 'Golden Joint Tea',
-    subtitle: 'Mama Juba\'s morning ritual for stiff knees',
+    subtitle: 'Ancient Apothecary\'s morning ritual for stiff knees',
     category: 'joints',
     prepTime: '5 min',
     image: 'img/golden-joint-tea.webp',
@@ -94,7 +94,7 @@ const RECIPES = [
       'Stir in honey.',
       'Drink first thing in the morning, on an empty stomach.'
     ],
-    why: 'Lemon and ACV support liver function,when your liver is sluggish, toxins circulate longer and cloud your thinking. Ginger increases blood flow to the brain. This combination was Mama Juba\'s grandmother\'s daily ritual until she was 94.',
+    why: 'Lemon and ACV support liver function,when your liver is sluggish, toxins circulate longer and cloud your thinking. Ginger increases blood flow to the brain. This combination was a grandmother\'s daily ritual until she was 94.',
     safetyFlags: [],
     videoId: null
   },
@@ -117,7 +117,7 @@ const RECIPES = [
       'Let it sit at room temperature for 7 days. Flip the jar once daily.',
       'After 7 days, eat 1 clove every morning. The honey becomes medicine too,take 1 tsp.'
     ],
-    why: 'Garlic contains allicin, studied at Stanford for its effect on blood pressure. Fermented in honey, it becomes easier to digest and the antimicrobial properties are enhanced. This is one of the oldest remedies in Mama Juba\'s family library.',
+    why: 'Garlic contains allicin, studied at Stanford for its effect on blood pressure. Fermented in honey, it becomes easier to digest and the antimicrobial properties are enhanced. This is one of the oldest remedies in Ancient Apothecary\'s library.',
     safetyFlags: ['bloodThinners'],
     videoId: null
   },
@@ -323,7 +323,7 @@ const RECIPES = [
   },
   {
     id: 'oat-honey-bowl',
-    title: 'Mama Juba\'s Power Oats',
+    title: 'Ancient Apothecary\'s Power Oats',
     subtitle: 'The breakfast that carries you through the whole day',
     category: 'energy',
     prepTime: '8 min',
@@ -610,8 +610,8 @@ const RECIPES = [
 const VIDEOS = [
   {
     id: 'intro',
-    title: 'Welcome to Mama Juba\'s Kitchen',
-    description: 'Meet Mama Juba and understand the healing philosophy behind every recipe.',
+    title: 'Welcome to Ancient Apothecary\'s Kitchen',
+    description: 'Understand the healing philosophy behind every recipe.',
     category: 'general',
     youtubeId: null, // TODO: add real YouTube ID
     duration: '8 min'
@@ -660,7 +660,7 @@ const VIDEOS = [
 
 /**
  * 30-Day Healing Protocol
- * Each day: a recipe ID + a short Mama Juba message
+ * Each day: a recipe ID + a short Ancient Apothecary message
  * Rest days have no recipe, just wisdom
  */
 const PROGRAM_30 = [

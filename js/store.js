@@ -2,7 +2,7 @@
  * Store — localStorage wrapper for app state
  */
 const Store = {
-  _key: 'jubapp_data',
+  _key: 'ancient_apothecary_data',
 
   _read() {
     try { return JSON.parse(localStorage.getItem(this._key)) || {}; }
